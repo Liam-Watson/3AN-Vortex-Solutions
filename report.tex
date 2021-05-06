@@ -1,0 +1,139 @@
+\documentclass{article}
+\DeclareMathSizes{10}{10}{7}{7}
+\usepackage{amsmath}
+\usepackage{ amssymb }
+\usepackage{tikz, graphicx}
+\usepackage{geometry}
+\usepackage[makeroom]{cancel}
+\geometry{legalpaper, margin=0.7in}
+\title{3AN Project 1\\ Shooting Newton and Kantorovich with matlab}
+\author{Liam Watson WTSLIA001}
+\begin{document}
+\maketitle
+When modeling vortecies a common Boundary Value problem that results is as follows
+
+
+\begin{align}
+&\frac{d^2 u}{dr^2} + \frac{1}{r}\frac{du}{dr} + \frac{u}{1-u^2}\left[\left(\frac{du}{dr}\right)^2 - \frac{n^2}{r^2}\right] + u(1-u^2) = 0 \\
+&u(0) = 0,\ \ \  u(\infty) = 1
+\end{align}
+
+Where 
+\begin{align*}
+&n\in \mathbb{N}/\{0\} \text{ Is the vorticity} \\
+&u = u(r)  \text{ Is our unknown function that is monotically growing} 
+\end{align*}
+In this paper we will solve the BVP (1), (2) numerically using the shooting method and the Newton-Kantorovich method for $n\in \{1,2,3\}$. The numerical solution to this BVP is sensitive to many parameters that we must choose. We will discuss the effect of our choices for parameters such as how we deal with $u(\infty)$, $\frac{u1}{1-u^2}$ being undefined at $u = 1$, $u(0) = 0$ but $1/r$ is undefined, the number of itterations, the value for $n$, mesh spacing, length of spacial interval, initial guess.
+
+\section{Numerical methods overview}
+Here we will discuss the different numerical schemes with their relative benefits and drawbacks 
+\subsection{Shooting method}
+AAAAAAA
+\subsection{Newton-Kantorovich method}
+BBBBBBBB
+\section{Derevation of needed formula}
+In order to begin the implementation we need to first derive the needed expressions from (1) and (2).
+\section{Shooting method}
+The differential equation in (1) is a non-linear one so we must use non-linear shooting to solve it. \\
+First we must derive an initial value problem from the boundary value problem which is described bellow 
+\begin{align}
+\begin{cases}
+u'' = -\frac{1}{r}\frac{du}{dr} - \frac{u}{1-u^2}\left[\left(\frac{du}{dr}\right)^2 - \frac{n^2}{r^2}\right] - u(1-u^2) \\
+u(0) = 0 \\
+u'(0) = p
+\end{cases}
+\end{align}
+Where $p$ is our shooting parameter. \\
+We now have two choice for solving for $p$ namely, bisection or newton's method. 
+We do not yet know which of these will give better results so let us implement both.  \\
+For bisection there is nothing for us do derive and the details will be covered in the implementation section. \\
+For Newtons method we must derive a scheme to update $p$ based on the function $u$ and the seccond boundary condition.\\ 
+We introduce:
+\begin{align}
+f' = \frac{\partial }{\partial p}\left(u(p,x=\infty)-1\right) =  \frac{\partial }{\partial p} u(p,x=\infty) \\
+z(p) = \frac{\partial }{\partial p} u(p,x)
+\end{align}
+Then 
+\begin{align}
+\begin{cases}
+z'' = \frac{\partial f}{\partial y}z + \frac{\partial f}{\partial y'}z' \\
+ \frac{\partial f}{\partial y} = \\
+ \frac{\partial f}{\partial y'} = \\
+\end{cases}
+\end{align}
+We can use reduction of order to obtain the systems we must solve numerically. 
+\begin{align}
+\begin{cases}
+u' = v \\
+v' = -\frac{1}{r}\frac{du}{dr} - \frac{u}{1-u^2}\left[\left(\frac{du}{dr}\right)^2 - \frac{n^2}{r^2}\right] - u(1-u^2) \\
+z' = w \\
+w = \left(\frac{1+u^2}{(1-u^2)^2}\left[ v^2 + \frac{n^2}{r^2} \right] \right)z + \left(\frac{-1}{r} + \frac{2uv}{1-u^2}\right)w \\
+\end{cases}
+\end{align}
+\section{Newton-Kantorovich}
+The first step for the Newton-Kantorovich is to find the Kantorovich equations which we can do by:
+\begin{itemize}
+\item Find $F(u) = 0$
+\item Find $F(y + hz)$
+\item Find $\frac{\partial F}{\partial h}$
+\item Find $\lim_{h\rightarrow 0} \frac{\partial F}{\partial h}$
+\end{itemize}
+\begin{enumerate}
+\item
+\begin{align}
+F(y) = 
+\begin{cases}
+\frac{d^2 u}{dr^2} + \frac{1}{r}\frac{du}{dr} + \frac{u}{1-u^2}\left[\left(\frac{du}{dr}\right)^2 - \frac{n^2}{r^2}\right] + u(1-u^2) = 0 \\
+u(0) = 0 \\
+u(\infty) = 1\\
+\end{cases}
+\end{align}
+\item
+\begin{align}
+F(y+hz) = 
+\begin{cases}
+u\prime\prime + hz\prime\prime + \frac{1}{r}\left(u\prime + hz\prime\right) + \frac{u + zh}{1-(u+zh)^2}\left[(u\prime + hz\prime)^2 - \frac{n^2}{r^2} \right] + (u + hz)(1-(u+hz)^2) = 0 \\
+u(0) + hz(0) = 0 \\
+u(\infty) + hz(\infty) = 1\\
+\end{cases}
+\end{align}
+\item and 4. assuming we know some approximation $u^n$
+\begin{align}
+\begin{cases}
+z\prime\prime + \frac{1}{r}z\prime + z(1-3u^2) + \frac{1}{1-u^2}\left[ (u\prime)^2  - \frac{n^2}{r^2}\right] = -(u^n)\prime\prime - \frac{1}{r}(u^n)\prime - \frac{u^n}{1-(u^n)^2}\left[\left((u^n)^\prime\right)^2 - \frac{n^2}{r^2}\right] - u^n(1-(u^n)^2) \\
+z(0) = -u^n(0) \\
+z(\infty) = u^n(\infty) + 1 
+\end{cases}
+\end{align}
+We choose to solve for $z$ using the finite difference method. First we must define a mesh.
+\begin{align}
+h = \frac{1-0}{N} \ \ \ \ \ \ \text{Where we are free to choose a large N} \\
+x_j = (j-1)*h, \ \ \ j = 1,2,3,...,N+1 \\
+u_j = u(x_j)
+\end{align}
+ 
+We use finite difference approxmiations for $u^\prime$ and $u^{\prime\prime}$
+\begin{align}
+(u_j)^\prime = \frac{u_{j+1} - u_{j-1}}{2h} \\
+(u_j)^{\prime\prime} = \frac{u_{j+1} - 2u_{j} + u_{j-1}}{h^2} \\
+\end{align}
+We then have our matrix-vector system defined as
+\begin{align}
+\vec{z} = \vec{U} A^{-1} 
+\end{align}
+\end{enumerate}
+\section{Implementation}
+Here we will discuss the implementation details of the two numerical methods
+\subsection{Shooting method}
+CCC
+\subsection{Newton-Kantorovich method}
+DDDDDD
+\section{Results and discussion}
+Here we will discuss how the two methods performed and what we learned. 
+\subsection{Shooting method}
+EEEEEEEEEE
+\subsection{Newton-Kantorovich method}
+FFFFFFFFFF
+\section{Conclusion and final remarks}
+GGGGGGG
+\end{document}
