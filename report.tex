@@ -5,6 +5,8 @@
 \usepackage{tikz, graphicx}
 \usepackage{geometry}
 \usepackage[makeroom]{cancel}
+% http://www.mathworks.com/matlabcentral/fileexchange/8015-m-code-latex-package
+\usepackage[framed,numbered,autolinebreaks,useliterate]{mcode}
 \geometry{legalpaper, margin=0.7in}
 \title{3AN Project 1\\ Shooting Newton and Kantorovich with matlab}
 \author{Liam Watson WTSLIA001}
@@ -28,9 +30,9 @@ In this paper we will solve the BVP (1), (2) numerically using the shooting meth
 \section{Numerical methods overview}
 Here we will discuss the different numerical schemes with their relative benefits and drawbacks 
 \subsection{Shooting method}
-AAAAAAA
+The general principle for the shooting method is to reduce our boundary value problem into an initial value problem. We do this by taking the first boundary condition as the first initial condition and some arbitrary second value for the second initial condition, we call this value the shooting parameter. We must then find a value of the shooting parameter so that our second boundary condition is met. We can do thing using the bisection or netwton's method.     
 \subsection{Newton-Kantorovich method}
-BBBBBBBB
+The general principle for Newton-Kantorovich is to find the system of Kantorovich equations. In our case this will produce a second order linear boundary value problem which we can solve using linear shooting or finite difference methods. The solution to this system is the correction to some initial guess for the initial problem to be solved.  
 \section{Derevation of needed formula}
 In order to begin the implementation we need to first derive the needed expressions from (1) and (2).
 \section{Shooting method}
@@ -123,11 +125,16 @@ We then have our matrix-vector system defined as
 \end{align}
 \end{enumerate}
 \section{Implementation}
-Here we will discuss the implementation details of the two numerical methods
+Here we will discuss the implementation details of the two numerical methods in matlab. \\
+
 \subsection{Shooting method}
-CCC
+\begin{lstlisting}
+%Matlab shooting code goes here
+\end{lstlisting}
 \subsection{Newton-Kantorovich method}
-DDDDDD
+\begin{lstlisting}
+%Matlab NK code goes here
+\end{lstlisting}
 \section{Results and discussion}
 Here we will discuss how the two methods performed and what we learned. 
 \subsection{Shooting method}
