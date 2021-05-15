@@ -107,6 +107,18 @@ z(0) = -u^n(0) \\
 z(\infty) = u^n(\infty) + 1 
 \end{cases}
 \end{align}
+This system (10) is now linear in $z$ so we can solve it using any numerical scheme for linear BVP's. Knowing that the standard form for a linear BVP is
+\begin{align}
+u^{\prime\prime} = p(r)u^\prime + q(r)u + \xi (r)
+\end{align}
+Trivially we can find the corresponding $p,q,\xi$ for (10)
+\begin{align*}
+\begin{cases}
+p = \frac{1}{r} _ \frac{2uu^\prime}{1-u^2} \\
+q = -3u^2 + 1 + \frac{1}{1-u^2}\left[(u^\prime)^2 -\frac{n^2}{r^2} \right] \\
+\xi = u
+\end{cases}
+\end{align*}
 We choose to solve for $z$ using the finite difference method. First we must define a mesh.
 \begin{align}
 h = \frac{1-0}{N} \ \ \ \ \ \ \text{Where we are free to choose a large N} \\
@@ -121,7 +133,34 @@ We use finite difference approxmiations for $u^\prime$ and $u^{\prime\prime}$
 \end{align}
 We then have our matrix-vector system defined as
 \begin{align}
+\begin{bmatrix}
+1 & 0 & 0 ... 0 \\
+1 + \frac{hp_3}{2} & -2 - h^2q_3 & 1 - \frac{hp_3}{2} & 0 &...& 0\\
+0 & . & . \\
+. & . & . \\
+. & . & . \\
+0 & ... &0 & & 1 + \frac{hp_N}{2} & -2 - h^2q_3 \\
+\end{bmatrix}
+\begin{bmatrix}
+z_2 \\ z_3 \\ . \\ . \\ . \\ z_N\\
+\end{bmatrix}
+=
+\begin{bmatrix}
+h^2 \xi \\
+h^2 \xi \\
+. \\
+. \\
+. \\
+h^2 \xi - 1
+\end{bmatrix}
+\end{align}
+Which we can solve for $z$ and simplify in matrix-vector notation to
+\begin{align}
 \vec{z} = \vec{U} A^{-1} 
+\end{align}
+We then wish to update $u$ using the correction $z$
+\begin{align}
+u^{n + 1} = u^{n} + z
 \end{align}
 \end{enumerate}
 \section{Implementation}
@@ -129,18 +168,487 @@ Here we will discuss the implementation details of the two numerical methods in 
 
 \subsection{Shooting method}
 \begin{lstlisting}
-%Matlab shooting code goes here
+a = 0.1; % Boundary one
+b = 8; % infinity
+n = 1;
+%p = 0.2; %Arbitray initial shooting parameter
+
+
+%file = fopen("inf.txt", 'w');
+%fprintf(file,'%6.2f %12.8f\n', n);
+%for b = [5:1:25]
+    ph = 2; %bisection
+    pl = 0;
+    p = (ph + pl)/2; %bisection
+    tol = 1;
+    i = 1;
+    u0 = [0,p,0,1];
+while i < 300 && tol > 1e-5
+   [r,u] = ode45(@shoot, [a:0.2:b], u0);
+   %disp(u(end,3))
+   plot(r,u(:,1));
+   %pause(0.1)
+   %disp((u(end,4)))
+   tol = abs(1-u(end,1));
+   tor = u(end,1);
+   if(tor > 1)
+      ph = p;
+      p = (pl + ph)/2;
+      u0 = [0,p,0,1];   
+   end
+   if(tor < 1)
+      pl = p;
+      p = (pl + ph)/2;
+      u0 = [0,p,0,1];  
+   end
+   %disp(p)
+   %p = p - ((u(end,1)-1)/(u(end,3)));
+   %u0 = [0,p,0,1];
+   %disp([p,ph,pl])
+   %disp(u0);
+   i = i + 1;
+   plot(r,u(:,1))
+   
+end
+%    bool = tol < 1e-5;%tolerence to be considered stable
+%    fprintf(file,'%6.2f %12.8f\n', b, bool);
+%end
+plot(r,u(:,1))
+%fclose(file);
+function [du] = shoot(r,u)
+    n = 1;
+    uu = u(1);
+    v = u(2);
+    z = u(3);
+    w = u(4);
+    
+    
+    du(1,1) = v; %
+    du(2,1) = (-1/r)*v  - (uu/(1-uu^2))*(v^2-(n^2)/(r^2)) - uu*(1-uu^2);
+    du(3,1) = w; % 
+    du(4,1) = z*( -((1 + uu^2)/((1-uu^2)^2))*(v^2 - (n^2)/(r^2)) - 1 + 3*uu^2) + w*(-1/r  - ((2*uu)*v)/(1-uu^2)) ;
+    
+end
 \end{lstlisting}
+\pagebreak
 \subsection{Newton-Kantorovich method}
 \begin{lstlisting}
-%Matlab NK code goes here
+
+%h = (b-a)/N;
+
+%r = (a:h:b)';
+
+%Initial guesses
+%u = r/b;
+%u = log(r + 1)/log(b+1) -a; 
+%u = 1./(1+exp(-r + b/2)); 
+
+n = 1; %vorticity 
+%file = fopen("inf.txt", 'w');
+%for N = [50:100:1950] %Here we loop over our hyperparameters and test for
+%stability i.e. N, b, a, etc.
+    a = 0.1; %This is our starting position
+    b = 5; %infity
+    N = 100;
+    h = (b-a)/N;
+    h2 = h*h;
+    r = (a:h:b)';
+    u = r/b;
+    %u = 1./(1+exp(-r));
+    rhs=[u(1);u(1:N-1)-2*u(2:N)+u(3:N+1) + h2.*f(r,u,h, N, n);u(N+1)-1];
+    tol = 1;
+    count = 1;
+
+while count < 500 && tol > 1e-6
+    dd = [0; -2 - h2.*q(r,u,h,N, n) ; 0];
+    upper = diag([0;1 - (h*p(r,u,h,N))./2],1);
+    lower = diag([1 + (h*p(r,u,h,N))./2;0],-1);
+    J = diag(dd,0) + upper + lower;  %Set three diagonal
+    J(1,1)=1; J(1,2)=0; J(1,3)=0; %Set BC 1
+    J(N+1,N+1)=1; J(N+1,N)=0; J(N+1,N-1)=0; %Set BC 2
+    z = -J\rhs; %Solve for correction
+    u = u + z; 
+    rhs=[u(1);u(1:N-1)-2*u(2:N)+u(3:N+1) + h2.*f(r,u,h,N,n);u(N+1)-1]; 
+    tol = norm(rhs) %Display tolerance
+    plot(r,u)
+    pause(0.05);
+    count = count+1;
+    
+end
+%    bool = tol < 1e-5;%tolerence to be considered stable
+%    fprintf(file,'%6.2f %12.8f\n', b, bool); %Write stability data
+%end %End of for loop
+%fclose(file);
+%This is f in y'' = f
+function [fu] = f(r, u, h, N, n)
+    uBefore = u(1:N-1);
+    uAfter = u(3:N+1);
+    u = u(2:N);
+    fu = 1*((1./r(2:N)).*((uAfter - uBefore)/(2*h)) + ((u)./(1-u.^2)).*(((uAfter - uBefore)/(2*h)).^2 - n^2./(r(2:N).^2)) + u.*(1-u.^2));
+end 
+%This is p in a linear ODE
+function [p] = p(r,u,h, N)
+    uBefore = u(1:N-1);
+    uAfter = u(3:N+1);
+    uu = u(2:N);
+    r = r(2:N);
+    p = -1*(1./r + (2*uu.*((uAfter-uBefore)/(2*h)))./(1-uu.^2));
+end
+
+
+%q(r)
+function [q] =  q(r,u, h , N, n)
+    r = r(2:N);
+    uBefore = u(1:N-1);
+    uAfter = u(3:N+1);
+    uu = u(2:N);
+    q= -1*(-3*uu.^2 + 1 + 1./((1-uu.^2)).*(((uAfter-uBefore)/(2*h)).^2 - (n^2)./(r.^2) )); 
+end
 \end{lstlisting}
+\pagebreak
 \section{Results and discussion}
-Here we will discuss how the two methods performed and what we learned. 
+Here we will discuss how the two methods performed and what we learned. \\
+The testing stratergy for the hyperparameters was as follows: We must have base stable parameters that we can fix while we vary the others. Let these be
+
+\begin{align*}
+ & a = 0.1 \\
+ & b = 5 \\
+ & N = 50 \\
+ & step size = 0.2 \\
+ & u^0 = \frac{r}{b} \\
+ & p0 = 0.2 \text{ \ \ \ \ For Newton's method in Nonlinear   shooting}\\
+ & ph = 4 \text{ \ \ \ \ For bisection in Nonlinear shooting}\\
+ & pl = 4 \text{ \ \ \ \ For bisection in Nonlinear shooting}
+\end{align*}
+Each test will be run until either 100 iterations is reached or the tolerance less than $10^{-7}$. \\
+The parameters that we will analyse for stability are $a,b,N,$ step size$,u^0$ and bisection vs newton.
 \subsection{Shooting method}
-EEEEEEEEEE
+\subsubsection{Varing a}
+\begin{table}[]
+\begin{tabular}{ll}
+1     &   \\
+0     & 0 \\
+0.001 & 1 \\
+0.002 & 1 \\
+0.003 & 1 \\
+0.004 & 1 \\
+0.005 & 1 \\
+0.006 & 1 \\
+0.007 & 1 \\
+0.008 & 1 \\
+0.009 & 1 \\
+0.01  & 1 \\
+      &   \\
+      &   \\
+      &   \\
+2     &   \\
+0     & 0 \\
+0.001 & 1 \\
+0.002 & 1 \\
+0.003 & 1 \\
+0.004 & 1 \\
+0.005 & 1 \\
+0.006 & 1 \\
+0.007 & 1 \\
+0.008 & 1 \\
+0.009 & 1 \\
+0.01  & 1 \\
+      &   \\
+3     &   \\
+0     & 0 \\
+0.001 & 0 \\
+0.002 & 0 \\
+0.003 & 0 \\
+0.004 & 0 \\
+0.005 & 0 \\
+0.006 & 0 \\
+0.007 & 0 \\
+0.008 & 0 \\
+0.009 & 1 \\
+0.01  & 1
+\end{tabular}
+\end{table}
+\subsubsection{Varing b}
+\begin{table}[]
+\begin{tabular}{ll}
+1  &   \\
+4  & 1 \\
+6  & 1 \\
+8  & 1 \\
+10 & 1 \\
+12 & 1 \\
+14 & 1 \\
+16 & 0 \\
+18 & 0 \\
+20 & 0 \\
+22 & 0 \\
+24 & 0 \\
+   &   \\
+2  &   \\
+4  & 1 \\
+6  & 1 \\
+8  & 1 \\
+10 & 1 \\
+12 & 1 \\
+14 & 1 \\
+16 & 1 \\
+18 & 0 \\
+20 & 0 \\
+22 & 0 \\
+24 & 0 \\
+   &   \\
+3  &   \\
+4  & 1 \\
+6  & 1 \\
+8  & 1 \\
+10 & 1 \\
+12 & 1 \\
+14 & 1 \\
+16 & 1 \\
+18 & 0 \\
+20 & 0 \\
+22 & 0 \\
+24 & 0
+\end{tabular}
+\end{table}
+\subsubsection{Varing step size}
+Current step size testing did not yeild any interesting results. 
+\subsubsection{Varing bisection vs Newton}
+TBD.
+\includegraphics[scale=1]{nonlinearshoot1.png}
 \subsection{Newton-Kantorovich method}
-FFFFFFFFFF
+\subsubsection{Varing a}
+\begin{table}[]
+\begin{tabular}{ll}
+1  &   \\
+4  & 1 \\
+6  & 1 \\
+8  & 1 \\
+10 & 1 \\
+12 & 1 \\
+14 & 1 \\
+16 & 0 \\
+18 & 0 \\
+20 & 0 \\
+22 & 0 \\
+24 & 0 \\
+   &   \\
+2  &   \\
+4  & 1 \\
+6  & 1 \\
+8  & 1 \\
+10 & 1 \\
+12 & 1 \\
+14 & 1 \\
+16 & 1 \\
+18 & 0 \\
+20 & 0 \\
+22 & 0 \\
+24 & 0 \\
+   &   \\
+3  &   \\
+4  & 1 \\
+6  & 1 \\
+8  & 1 \\
+10 & 1 \\
+12 & 1 \\
+14 & 1 \\
+16 & 1 \\
+18 & 0 \\
+20 & 0 \\
+22 & 0 \\
+24 & 0
+\end{tabular}
+\end{table}
+\subsubsection{Varing b}
+\begin{table}[]
+\begin{tabular}{ll}
+1  &   \\
+4  & 1 \\
+6  & 0 \\
+8  & 0 \\
+10 & 0 \\
+12 & 0 \\
+14 & 0 \\
+16 & 0 \\
+18 & 0 \\
+20 & 0 \\
+22 & 0 \\
+24 & 0 \\
+2  &   \\
+4  & 1 \\
+6  & 1 \\
+8  & 0 \\
+10 & 0 \\
+12 & 0 \\
+14 & 0 \\
+16 & 0 \\
+18 & 0 \\
+20 & 0 \\
+22 & 0 \\
+24 & 0 \\
+3  &   \\
+4  & 1 \\
+6  & 1 \\
+8  & 1 \\
+10 & 1 \\
+12 & 0 \\
+14 & 0 \\
+16 & 0 \\
+18 & 0 \\
+20 & 0 \\
+22 & 0 \\
+24 & 0
+\end{tabular}
+\end{table}
+\subsubsection{Varing N}
+\begin{table}[]
+\begin{tabular}{ll}
+1    &   \\
+10   & 0 \\
+110  & 0 \\
+210  & 0 \\
+310  & 0 \\
+410  & 0 \\
+510  & 0 \\
+610  & 0 \\
+710  & 0 \\
+810  & 0 \\
+910  & 1 \\
+1010 & 0 \\
+2    &   \\
+10   & 1 \\
+110  & 1 \\
+210  & 1 \\
+310  & 1 \\
+410  & 1 \\
+510  & 1 \\
+610  & 1 \\
+710  & 1 \\
+810  & 1 \\
+910  & 1 \\
+1010 & 1 \\
+3    &   \\
+10   & 1 \\
+110  & 1 \\
+210  & 1 \\
+310  & 1 \\
+410  & 1 \\
+510  & 1 \\
+610  & 1 \\
+710  & 1 \\
+810  & 1 \\
+910  & 1 \\
+1010 & 1
+\end{tabular}
+\end{table}
+\subsubsection{Varing initial guess}
+\begin{table}[]
+\begin{tabular}{ll}
+                                           &   \\
+guess 1=linear, 2=sigmoid, 3=-e-r+1, 4=log &   \\
+1                                          &   \\
+1                                          &   \\
+4                                          & 1 \\
+6                                          & 0 \\
+8                                          & 0 \\
+10                                         & 0 \\
+12                                         & 0 \\
+14                                         & 0 \\
+16                                         & 0 \\
+2                                          &   \\
+4                                          & 1 \\
+6                                          & 0 \\
+8                                          & 0 \\
+10                                         & 0 \\
+12                                         & 0 \\
+14                                         & 0 \\
+16                                         & 0 \\
+3                                          &   \\
+4                                          & 1 \\
+6                                          & 0 \\
+8                                          & 0 \\
+10                                         & 0 \\
+12                                         & 0 \\
+14                                         & 0 \\
+16                                         & 0 \\
+4                                          &   \\
+4                                          & 1 \\
+6                                          & 0 \\
+8                                          & 0 \\
+10                                         & 0 \\
+12                                         & 0 \\
+14                                         & 0 \\
+16                                         & 0 \\
+2                                          &   \\
+1                                          &   \\
+4                                          & 1 \\
+6                                          & 1 \\
+8                                          & 0 \\
+10                                         & 0 \\
+12                                         & 0 \\
+14                                         & 0 \\
+16                                         & 0 \\
+2                                          &   \\
+4                                          & 1 \\
+6                                          & 1 \\
+8                                          & 0 \\
+10                                         & 0 \\
+12                                         & 0 \\
+14                                         & 0 \\
+16                                         & 0 \\
+3                                          &   \\
+4                                          & 1 \\
+6                                          & 1 \\
+8                                          & 1 \\
+10                                         & 0 \\
+12                                         & 0 \\
+14                                         & 0 \\
+16                                         & 0 \\
+4                                          &   \\
+4                                          & 1 \\
+6                                          & 0 \\
+8                                          & 0 \\
+10                                         & 0 \\
+12                                         & 0 \\
+14                                         & 0 \\
+16                                         & 0 \\
+3                                          &   \\
+1                                          &   \\
+4                                          & 1 \\
+6                                          & 1 \\
+8                                          & 1 \\
+10                                         & 1 \\
+12                                         & 0 \\
+14                                         & 0 \\
+16                                         & 0 \\
+2                                          &   \\
+4                                          & 1 \\
+6                                          & 1 \\
+8                                          & 1 \\
+10                                         & 0 \\
+12                                         & 0 \\
+14                                         & 0 \\
+16                                         & 0 \\
+3                                          &   \\
+4                                          & 1 \\
+6                                          & 1 \\
+8                                          & 1 \\
+10                                         & 1 \\
+12                                         & 0 \\
+14                                         & 0 \\
+16                                         & 0 \\
+4                                          &   \\
+4                                          & 1 \\
+6                                          & 0 \\
+8                                          & 0 \\
+10                                         & 0 \\
+12                                         & 0 \\
+14                                         & 0 \\
+16                                         & 0
+\end{tabular}
+\end{table}
+\includegraphics[scale=1]{NK.png}
 \section{Conclusion and final remarks}
 GGGGGGG
 \end{document}
