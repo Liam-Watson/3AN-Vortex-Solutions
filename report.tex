@@ -88,14 +88,14 @@ The first step for the Newton-Kantorovich is to find the Kantorovich equations b
 
 
 \item Find $F(u) = 0$
-\item Find $F(y + hz)$
+\item Find $F(u + hz)$
 \item Find $\frac{\partial F}{\partial h}$
 \item Find $\lim_{h\rightarrow 0} \frac{\partial F}{\partial h}$
 \end{enumerate}
 \begin{enumerate}
 \item
 \begin{align}
-F(y) = 
+F(u) = 
 \begin{cases}
 \frac{d^2 u}{dr^2} + \frac{1}{r}\frac{du}{dr} + \frac{u}{1-u^2}\left[\left(\frac{du}{dr}\right)^2 - \frac{n^2}{r^2}\right] + u(1-u^2) = 0 \\
 u(0) = 0 \\
@@ -104,7 +104,7 @@ u(\infty) = 1\\
 \end{align}
 \item
 \begin{align}
-F(y+hz) = 
+F(u+hz) = 
 \begin{cases}
 u^{\prime\prime} + hz^{\prime\prime} + \frac{1}{r}\left(u^\prime + hz^\prime\right) + \frac{u + zh}{1-(u+zh)^2}\left[(u^\prime + hz^\prime)^2 - \frac{n^2}{r^2} \right] + (u + hz)(1-(u+hz)^2) = 0 \\
 u(0) + hz(0) = 0 \\
@@ -346,8 +346,11 @@ Each test will be run until either 100 iterations is reached or the tolerance le
 The parameters that we will analyse for stability are $a,b,N,$ step size$,u^0$ (the initial guess for finite differences) and bisection vs Newton's method for shooting parameter update schemes. \\
 A note on interpreting results: For brevity convergence to a stable solution has been represented by a $1$ and divergence as defined above is represented by a $0$.  
 \subsection{Shooting method}
-\includegraphics[scale=1]{nonlinearshoot1.png}
-We can see a clear pattern forming as $n$ grows. If we continue to solve for $n=4,5,6$ we see a similar trend as $u$ goes to 1 increasingly slowly. Another interesting insight is that the curves sharply rize to 1 as they near the $b$ value. This occurs because of the numerical schemes themselves forcing the boundary condition in finite $r$, if we were to let $r$ go to infinity we would not see this behavior. \\
+\includegraphics[scale=0.7]{nonlinearshoot1.png}
+\\
+\\
+We can see a clear pattern forming as $n$ grows. If we continue to solve for $n=4,5,6$ we see a similar trend as $u$ goes to 1 increasingly slowly. Another interesting insight is that the curves sharply rize to 1 as they near the $b$ value. This occurs because of the numerical schemes themselves forcing the boundary condition in finite $r$, if we were to let $r$ go to infinity we would not see this behavior. 
+\pagebreak
 \subsubsection{Varying a}
 \begin{table}[H]
 \centering
