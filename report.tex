@@ -546,9 +546,14 @@ b                                          & linear  & sigmoid & exponential & l
 \caption{This table shows the convergence of the NK method with varying N and initial guess $u^0$ for $n=3$}
 \end{table} 
 We can see from tables 6,7 and 8 that for $n=2,3$ the exponential function exhibits the best stability properies as $b$ varies. Once again $n=1$ shows poor stability since the other parameters are poorly chosen to satisfy its stability needs. The exponential guess likely performs the best as it matches the solution most closely which in turn requres less correction from the numerical method, giving rise to better stability properties. \\
-Interestinly the linear function performs well for all $n$ and is likely a good start for any numerical method where the solution curve is not already known. \\
+Interestingly the linear function performs well for all $n$ and is likely a good start for any numerical method where the solution curve is not already known. \\
 The sigmiod performs well dispite not satisfying the boundary conditions, this is due to corrections being applied at the boundaries. This result is good as it indicates that when choosing an intial guess we are free to choose any function that best matches our goal, no restriction for boundary conditions. \\
 The logarithmic function performs the worst of all the guesses which is likely due to its shape. But it is not clear why this would be an issue as the curve matches the solution curve well, further investigation here would likely yeild interesting results. \\
 \section{Conclusion and final remarks}
-GGGGGGG
+The two numerical methods exhibit some shared stability properties but with some differences. Nonlinear shooting struggles when there are undefined values at the curve boundaries where as Newton-Kantorovich with Finite diffences does not. \\
+Both methods exhibit similar behavour from step size and mesh  density, both of which often require tuning for the specific problem. \\
+Both methods exhibit instability as $b$ grows however, the nonlinear shooting method has far better stability properties in this regard for the conditions that were tested. \\
+The initial guess for Newton-Kantorovich with finite differences had a large impact on the stability of solutions. However in most cases a simple linear guess will be sufficient and can be tuned later on. \\
+Nonlinear shooting with the Newton's method update scheme exhibited poor stability due to issues arising from division of small and large numbers, however, this issue will not be the case for all problems. The bisection method is a good starting point for its simplicity and lack of reliance on the stability of the solution to update. \\
+Both numerical methods provide unique advantages and disadvantages with the shooting method being easy to implement but providing poor stability at the boundaries and Newton-Kantorovich with finite differences exhibiting poorer stability over all but solving this issue. Additionally Newton-Kantorovich gives more flexibility as we can use any linear numerical method to solve for the update parameter. When solving a Boundary Value Problem one should consider these paramters and make a choice based on them. 
 \end{document}
