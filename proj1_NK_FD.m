@@ -4,20 +4,22 @@ clc
 clear
 
 for n = [1,2,3] % Loop over all n=1,2,3 and obtain numerical solutions
-    a = 0; %The left BC
-    b = 4; %infity (the right BC)
+    clc
+    clearvars -except n
+    a = 0.1; %The left BC
+    b = 5; %infity (the right BC)
     N = 50; %Define number of mesh points
     h = (b-a)/N; %Define the mesh step size according to scheme
     h2 = h*h; %Simplification of code
     r = (a:h:b)'; %Set up r mesh with step size h between a and b
-    u = r/b; %Initial guess is linear, other guesses are bellow
+    %u = r/b; %Initial guess is linear, other guesses are bellow
     %u = log(r + 1)/log(b+1) -a; 
-    %u = -exp(-(r)) + 1 ;
+    u = -exp(-(r)) + 1 ;
     %u = 1./(1+exp(-r + b/2)); 
     rhs=[u(1);u(1:N-1)-2*u(2:N)+u(3:N+1) + h2.*f(r,u,h, N, n);u(N+1)-1]; %Set initial RHS based on guess
     tol = 1; %Initialize tolerance value
     count = 1; %Initialize iteration counter
-    while count < 100 && tol > 1e-7
+    while count < 50 && tol > 1e-5
         dd = [0; -2 - h2.*q(r,u,h,N, n) ; 0];
         upper = diag([0;1 - (h*p(r,u,h,N))./2],1);
         lower = diag([1 + (h*p(r,u,h,N))./2;0],-1);
