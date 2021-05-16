@@ -62,8 +62,8 @@ For bisection there is nothing for us do derive and the details will be covered 
 For Newtons method we must derive a scheme to update $p$ based on the function $u$ and the seccond boundary condition.\\ 
 We introduce:
 \begin{align}
-f' = \frac{\partial }{\partial p}\left(u(p,x=\infty)-1\right) =  \frac{\partial }{\partial p} u(p,x=\infty) \\
-z(p) = \frac{\partial }{\partial p} u(p,x)
+&f' = \frac{\partial }{\partial p}\left(u(p,x=\infty)-1\right) =  \frac{\partial }{\partial p} u(p,x=\infty) \\
+&z(p) = \frac{\partial }{\partial p} u(p,x)
 \end{align}
 Then 
 \begin{align}
@@ -131,15 +131,15 @@ q = -3u^2 + 1 + \frac{1}{1-u^2}\left[(u^\prime)^2 -\frac{n^2}{r^2} \right] \\
 \end{align*}
 We choose to solve for $z$ using the finite difference method. First we must define a mesh.
 \begin{align}
-h = \frac{1-0}{N} \ \ \ \ \ \ \text{Where we are free to choose a large N} \\
-x_j = (j-1)*h, \ \ \ j = 1,2,3,...,N+1 \\
-u_j = u(x_j)
+&h = \frac{1-0}{N} \ \ \ \ \ \ \text{Where we are free to choose a large N} \\
+&x_j = (j-1)h, \ \ \ j = 1,2,3,...,N+1 \\
+&u_j = u(x_j)
 \end{align}
  
 We use finite difference approxmiations for $u^\prime$ and $u^{\prime\prime}$
 \begin{align}
-(u_j)^\prime = \frac{u_{j+1} - u_{j-1}}{2h} \\
-(u_j)^{\prime\prime} = \frac{u_{j+1} - 2u_{j} + u_{j-1}}{h^2} \\
+&(u_j)^\prime = \frac{u_{j+1} - u_{j-1}}{2h} \\
+&(u_j)^{\prime\prime} = \frac{u_{j+1} - 2u_{j} + u_{j-1}}{h^2} \\
 \end{align}
 We then have our matrix-vector system defined as
 \begin{align}
@@ -179,140 +179,149 @@ If the reader would like to investigate implementation regarding testing and exp
 
 \subsection{Shooting method}
 \begin{lstlisting}
-a = 0.1; % Boundary one
-b = 8; % infinity
-n = 1;
-%p = 0.2; %Arbitray initial shooting parameter
+hold off
+clf
+clc
+clear
 
-
-%file = fopen("inf.txt", 'w');
-%fprintf(file,'%6.2f %12.8f\n', n);
-%for b = [5:1:25]
-    ph = 2; %bisection
-    pl = 0;
-    p = (ph + pl)/2; %bisection
-    tol = 1;
-    i = 1;
-    u0 = [0,p,0,1];
-while i < 300 && tol > 1e-5
-   [r,u] = ode45(@shoot, [a:0.2:b], u0);
-   %disp(u(end,3))
-   plot(r,u(:,1));
-   %pause(0.1)
-   %disp((u(end,4)))
-   tol = abs(1-u(end,1));
-   tor = u(end,1);
-   if(tor > 1)
-      ph = p;
-      p = (pl + ph)/2;
-      u0 = [0,p,0,1];   
-   end
-   if(tor < 1)
-      pl = p;
-      p = (pl + ph)/2;
-      u0 = [0,p,0,1];  
-   end
-   %disp(p)
-   %p = p - ((u(end,1)-1)/(u(end,3)));
-   %u0 = [0,p,0,1];
-   %disp([p,ph,pl])
-   %disp(u0);
-   i = i + 1;
-   plot(r,u(:,1))
-   
+for n = [1,2,3]
+    a = 0.1; % Boundary one
+    b = 15; % infinity [1,2,3]
+    ph = 4; %bisection upper bound
+    pl = -4; %Bisection lower bound
+    p = (ph + pl)/2; %bisection first mid point
+    %p = 0.2; %Arbitray initial shooting parameter used for NM
+    tol = 1; %Set initial tolerance
+    i = 1; %Counter for number of iterations
+    u0 = [0,p,0,1]; %Set initial conditions for our system
+    step_size = 0.2; %Set step size 
+    while i < 100 && tol > 1e-7
+        %Integrate the system using runge-kutta method
+        [r,u] = ode45(@(r,u) shoot(r,u,n), [a:step_size:b], u0,n);
+        tol = abs(1-u(end,1)) %Display the tolerance
+        tor = u(end,1); %Purely aesthetic
+        %Bisection scheme for updating p.
+        if(tor > 1)
+            ph = p; %Move upper bound
+            p = (pl + ph)/2; %Bisect
+            u0 = [0,p,0,1]; %Update IC's with new p value
+        end
+        if(tor < 1) %Note that we exclude tor = 1 explicitly as if tor = 1 we are finished.
+            pl = p; %Move lower bound
+            p = (pl + ph)/2; %Bisect
+            u0 = [0,p,0,1]; %Update IC's with new p value
+        end
+        %End of Bisection scheme
+        
+        %NM scheme. Note that we use bisection primarily for stability
+        %p = p - ((u(end,1)-1)/(u(end,3))); %Update p according to NM scheme
+        %u0 = [0,p,0,1]; %Update the IC's with new p value
+        
+        i = i + 1; %Update iteration counter
+        figure(1);plot(r,u(:,1)); %Plot the updated solution curve
+        hold off;
+        pause(0.1);
+    end
+    fig2 = figure(2);
+    plot(r,u(:,1)) %Plot updated solution curve for all n
+    hold on;
+    legend("n=1", "n=2", "n=3");
+    title("Nonlinear shooting for a = 0.1, b = 15, tol = 1e-7");
+    xlabel('r');
+    ylabel('u');
+    pause(1);
 end
-%    bool = tol < 1e-5;%tolerence to be considered stable
-%    fprintf(file,'%6.2f %12.8f\n', b, bool);
-%end
-plot(r,u(:,1))
-%fclose(file);
-function [du] = shoot(r,u)
-    n = 1;
+
+%The system of equations for u and z. Note z is only needed for NM scheme
+function [du] = shoot(r,u, n)
     uu = u(1);
     v = u(2);
-    z = u(3);
+    z = u(3);%Extract the IC's
     w = u(4);
-    
-    
-    du(1,1) = v; %
+    %Update scheme needed for integrating u
+    du(1,1) = v;
     du(2,1) = (-1/r)*v  - (uu/(1-uu^2))*(v^2-(n^2)/(r^2)) - uu*(1-uu^2);
-    du(3,1) = w; % 
-    du(4,1) = z*( -((1 + uu^2)/((1-uu^2)^2))*(v^2 - (n^2)/(r^2)) - 1 + 3*uu^2) + w*(-1/r  - ((2*uu)*v)/(1-uu^2)) ;
-    
+    %Update scheme needed for integrating z
+    du(3,1) = w;
+    du(4,1) = z*( -((1 + uu^2)/((1-uu^2)^2))*(v^2 - (n^2)/(r^2)) - 1 + 3*uu^2) + w*(-1/r  - ((2*uu)*v)/(1-uu^2));
 end
 \end{lstlisting}
 \pagebreak
 \subsection{Newton-Kantorovich method}
 \begin{lstlisting}
+hold off
+clf
+clc
+clear
 
-%h = (b-a)/N;
+for n = [1,2,3] % Loop over all n=1,2,3 and obtain numerical solutions
+    a = 0; %The left BC
+    b = 4; %infity (the right BC)
+    N = 50; %Define number of mesh points
+    h = (b-a)/N; %Define the mesh step size according to scheme
+    h2 = h*h; %Simplification of code
+    r = (a:h:b)'; %Set up r mesh with step size h between a and b
+    u = r/b; %Initial guess is linear, other guesses are bellow
+    %u = log(r + 1)/log(b+1) -a; 
+    %u = -exp(-(r)) + 1 ;
+    %u = 1./(1+exp(-r + b/2)); 
+    rhs=[u(1);u(1:N-1)-2*u(2:N)+u(3:N+1) + h2.*f(r,u,h, N, n);u(N+1)-1]; %Set initial RHS based on guess
+    tol = 1; %Initialize tolerance value
+    count = 1; %Initialize iteration counter
+    while count < 100 && tol > 1e-7
+        dd = [0; -2 - h2.*q(r,u,h,N, n) ; 0];
+        upper = diag([0;1 - (h*p(r,u,h,N))./2],1);
+        lower = diag([1 + (h*p(r,u,h,N))./2;0],-1);
+        J = diag(dd,0) + upper + lower;  %Set three diagonal
+        J(1,1)=1; %Set BC 1
+        J(N+1,N+1)=1; %Set BC 2
+        z = -J\rhs; %Solve for correction
+        u = u + z; %Update u with new correction
+        rhs=[u(1);(u(1:N-1)-2*u(2:N)+u(3:N+1)) + h2.*f(r,u,h,N,n);u(N+1)-1]; %Update RHS values
+        tol = norm(rhs); %Display tolerance
+        fig1 = figure(1);
+        plot(r,u); %Plot updated curve of u
+        hold off;
+        pause(0.1);
+        count = count+1; %Increment iteration counter
+    end
+    %Plot final solution u for each n
+    fig2 = figure(2);
+    plot(r,u);
+    hold on;
+    legend("n=1", "n=2", "n=3");
+    title("NK for b = 7, tol = 1e-7, logarithm guess, N = 50");
+    xlabel('r');
+    ylabel('u');
+    pause(1);
+end %End of n for loop
 
-%r = (a:h:b)';
-
-%Initial guesses
-%u = r/b;
-%u = log(r + 1)/log(b+1) -a; 
-%u = 1./(1+exp(-r + b/2)); 
-
-n = 1; %vorticity 
-%file = fopen("inf.txt", 'w');
-%for N = [50:100:1950] %Here we loop over our hyperparameters and test for
-%stability i.e. N, b, a, etc.
-    a = 0.1; %This is our starting position
-    b = 5; %infity
-    N = 100;
-    h = (b-a)/N;
-    h2 = h*h;
-    r = (a:h:b)';
-    u = r/b;
-    %u = 1./(1+exp(-r));
-    rhs=[u(1);u(1:N-1)-2*u(2:N)+u(3:N+1) + h2.*f(r,u,h, N, n);u(N+1)-1];
-    tol = 1;
-    count = 1;
-
-while count < 500 && tol > 1e-6
-    dd = [0; -2 - h2.*q(r,u,h,N, n) ; 0];
-    upper = diag([0;1 - (h*p(r,u,h,N))./2],1);
-    lower = diag([1 + (h*p(r,u,h,N))./2;0],-1);
-    J = diag(dd,0) + upper + lower;  %Set three diagonal
-    J(1,1)=1; J(1,2)=0; J(1,3)=0; %Set BC 1
-    J(N+1,N+1)=1; J(N+1,N)=0; J(N+1,N-1)=0; %Set BC 2
-    z = -J\rhs; %Solve for correction
-    u = u + z; 
-    rhs=[u(1);u(1:N-1)-2*u(2:N)+u(3:N+1) + h2.*f(r,u,h,N,n);u(N+1)-1]; 
-    tol = norm(rhs) %Display tolerance
-    plot(r,u)
-    pause(0.05);
-    count = count+1;
-    
-end
-%    bool = tol < 1e-5;%tolerence to be considered stable
-%    fprintf(file,'%6.2f %12.8f\n', b, bool); %Write stability data
-%end %End of for loop
-%fclose(file);
 %This is f in y'' = f
 function [fu] = f(r, u, h, N, n)
-    uBefore = u(1:N-1);
-    uAfter = u(3:N+1);
-    u = u(2:N);
-    fu = 1*((1./r(2:N)).*((uAfter - uBefore)/(2*h)) + ((u)./(1-u.^2)).*(((uAfter - uBefore)/(2*h)).^2 - n^2./(r(2:N).^2)) + u.*(1-u.^2));
+    uBefore = u(1:N-1); %This is u_{j-1}
+    uAfter = u(3:N+1); %This is u_{j+1}
+    u = u(2:N); %This is u_{j}
+    %Evaluate and return f(2:N). Note the FD approximations of u' 
+    fu = (1./r(2:N)).*((uAfter - uBefore)/(2*h)) + ((u)./(1-u.^2)).*(((uAfter - uBefore)/(2*h)).^2 - n^2./(r(2:N).^2)) + u.*(1-u.^2);
 end 
-%This is p in a linear ODE
+
+%This is p(r) in a linear kantorovich equations
 function [p] = p(r,u,h, N)
-    uBefore = u(1:N-1);
-    uAfter = u(3:N+1);
-    uu = u(2:N);
-    r = r(2:N);
+    uBefore = u(1:N-1); %This is u_{j-1}
+    uAfter = u(3:N+1); %This is u_{j+1}
+    uu = u(2:N); %This is u_{j}
+    r = r(2:N); %Find r excluding the end points
+    %Evaluate and return p(2:N)
     p = -1*(1./r + (2*uu.*((uAfter-uBefore)/(2*h)))./(1-uu.^2));
 end
 
-
-%q(r)
+%This is q(r) in the linear kantorovich equations
 function [q] =  q(r,u, h , N, n)
-    r = r(2:N);
-    uBefore = u(1:N-1);
-    uAfter = u(3:N+1);
-    uu = u(2:N);
+    r = r(2:N); %Find r excluding the end points
+    uBefore = u(1:N-1);  %This is u_{j-1}
+    uAfter = u(3:N+1); %This is u_{j+1}
+    uu = u(2:N); %This is u_{j}
+    %Evaluate and return q(2:N)
     q= -1*(-3*uu.^2 + 1 + 1./((1-uu.^2)).*(((uAfter-uBefore)/(2*h)).^2 - (n^2)./(r.^2) )); 
 end
 \end{lstlisting}
@@ -465,13 +474,22 @@ N & n=1 &  n=2 &  n=3 \\
 The results here are quite surprising, with solutions for $n=1$ only being stable for $N=910$ while for larger $n$ solutions are stable for all $N$ in the testing. This is likely due to poor choice of testing parameters for $n=1$ as they inherintly cause instability, see 6.2.3 for similar results. \\
 Collectively we can assume that $N$ has a similar effect to that of the step size in the shooting method as a low number of mesh points can give rise to stability by ignoring problamatic areas while a large number of mesh points can also give rise to stability where critical detail is needed to form a stable solution. This means that choosing a good value for $N$ is problem dependent, for our vortex solutions we know that when using the Newton-Kantorovich method that there are no points that cause instability so a low $N$ is not required, we can see in the varying of $N$ that when the choice of other parameters is poor a good $N$ value can still produce stable solutions. 
 \subsubsection{Varing initial guess}
+These results are valuable as they give us insight on the effect of our initial guess on the stability of the numerical solutions for $u$. \\
+Each table shows the effect of different functions chosen for each a value of $n$. The functions chosen are:
+\begin{align*}
+&\text{linear: } u = r/b  \\
+&\text{sigmoid: } u = \frac{1}{1+e^{-r + b/2}} \\
+&\text{exponential: } u = -e^{-r} + 1 \\
+&\text{logarithmic: } u = \frac{log(r+1)}{log(b+1)} 
+\end{align*}
+Note that all the functions satisfy the boundary conditions except the sigmoid which does not. 
 \begin{table}[H]
 \centering
 \begin{tabular}{|c|c|c|c|c|}
 %                                           &   \\
 %guess 1=linear, 2=sigmoid, 3=-e-r+1, 4=log &   \\
 \hline
-N                                          & linear  & sigmoid & $-e^-r + 1 $&log \\
+b                                          & linear  & sigmoid & $-e^-r + 1 $&log \\
 \hline
 4  & 1 & 1 & 1 & 1\\
 6  & 0 & 0 & 0 & 0\\
@@ -488,7 +506,7 @@ N                                          & linear  & sigmoid & $-e^-r + 1 $&lo
 \centering
 \begin{tabular}{|c|c|c|c|c|}
 \hline
-N                                          & linear  & sigmoid & $-e^-r + 1$ &log \\
+b                                          & linear  & sigmoid & $-e^-r + 1$ &log \\
 \hline
 4                                          & 1 & 1 & 1 &1\\
 6                                          & 1 & 1 & 1 &0\\
@@ -505,7 +523,7 @@ N                                          & linear  & sigmoid & $-e^-r + 1$ &lo
 \centering
 \begin{tabular}{|c|c|c|c|c|}
 \hline
-N                                          & linear  & sigmoid & $-e^-r + 1$ &log \\
+b                                          & linear  & sigmoid & $-e^-r + 1$ &log \\
 \hline
 4                                          & 1 & 1 & 1 & 1\\
 6                                          & 1 & 1 & 1 & 0\\
@@ -518,7 +536,10 @@ N                                          & linear  & sigmoid & $-e^-r + 1$ &lo
 \end{tabular}
 \caption{This table shows the convergence of the NK method with varying N and initial guess $u^0$ for $n=3$}
 \end{table}
-
+We can see from tables 6,7 and 8 that for $n=2,3$ the exponential function exhibits the best stability properies as $b$ varies. Once again $n=1$ shows poor stability since the other parameters are poorly chosen to satisfy its stability needs. The exponential guess likely performs the best as it matches the solution most closely which in turn requres less correction from the numberical method, giving rise to better stability properties. \\
+Interestinly the linear function performs well for all $n$ and is likely a good start for any numerical method where the solution curve is not already known. \\
+The sigmiod performs well dispite not satisfying the boundary conditions, this is due to corrections being applied at the boundaries. This result is good as it indicates that when choosing an intial guess we are free to choose any function that best matches our goal, no restriction for boundary conditions. \\
+The logarithmic function performs the worst of all the guesses which is likely due to its shape. But it is not clear why this would be an issue as the curve matches the solution curve well, further investigation here would likely yeild interesting results. \\
 \section{Conclusion and final remarks}
 GGGGGGG
 \end{document}
